@@ -45,19 +45,29 @@ class FileUploaderService {
     }
 
     //base path to save file
-    def path = config.path
-    if (!path.endsWith('/'))
-      path = path + "/"
+    def path = config?.path
+    if (path && !path.endsWith('/'))
+		path = path+"/"
 
-    //sets new path
-    path = path + group + "/"
-    if (!new File(path).mkdirs())
-      log.info "FileUploader plugin couldn't create directories: [${path}]"
-    path = path + name + "." + fileExtension
-
-    //move file
-    log.debug "FileUploader plugin received a ${file.size}b file. Moving to ${path}"
-    file.transferTo(new File(path))
+	/*********************
+		check storage type
+	**********************/
+	def currentTime = System.currentTimeMillis()
+	if(config?.path) {
+		//sets new path
+		//sets new path
+	    path = path + group + "/"
+	    if (!new File(path).mkdirs())
+	      log.info "FileUploader plugin couldn't create directories: [${path}]"
+	    path = path + name + "." + fileExtension
+	
+		//move file
+		log.debug "FileUploader plugin received a ${file.size}b file. Moving to ${path}"
+		file.transferTo(new File(path))
+	}
+	else {
+		path = null
+	}
 
     //save it on the database
     def ufile = new UFile()
@@ -66,6 +76,10 @@ class FileUploaderService {
     ufile.extension = fileExtension
     ufile.dateUploaded = new Date()
     ufile.path = path
+	ufile.path = path
+	if(!path) {
+		ufile.data = file.bytes
+	}
     ufile.downloads = 0
 
     return ufile.save()

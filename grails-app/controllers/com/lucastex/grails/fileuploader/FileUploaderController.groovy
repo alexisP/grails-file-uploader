@@ -20,8 +20,8 @@ class FileUploaderController {
 		def file = request.getFile("file")
 		
 		//base path to save file
-		def path = config.path
-		if (!path.endsWith('/'))
+		def path = config?.path
+		if (path && !path.endsWith('/'))
 			path = path+"/"
 		
 		/**************************
@@ -66,16 +66,24 @@ class FileUploaderController {
 		//reaches here if file.size is smaller or equal config.maxSize or if config.maxSize ain't configured (in this case
 		//plugin will accept any size of files).
 		
-		//sets new path
+		/*********************
+			check storage type
+		**********************/
 		def currentTime = System.currentTimeMillis()
-		path = path+currentTime+"/"
-		if (!new File(path).mkdirs())
-			log.error "FileUploader plugin couldn't create directories: [${path}]"
-		path = path+file.originalFilename
-		
-		//move file
-		log.debug "FileUploader plugin received a ${file.size}b file. Moving to ${path}"
-		file.transferTo(new File(path))
+		if(config?.path) {
+			//sets new path
+			path = path+currentTime+"/"
+			if (!new File(path).mkdirs())
+				log.error "FileUploader plugin couldn't create directories: [${path}]"
+			path = path+file.originalFilename
+			
+			//move file
+			log.debug "FileUploader plugin received a ${file.size}b file. Moving to ${path}"
+			file.transferTo(new File(path))
+		}
+		else {
+			path = null
+		}
 		
 		//save it on the database
 		def ufile = new UFile()
@@ -84,6 +92,9 @@ class FileUploaderController {
 		ufile.extension = fileExtension
 		ufile.dateUploaded = new Date(currentTime)
 		ufile.path = path
+		if(!path) {
+			ufile.data = file.bytes
+		}
 		ufile.downloads = 0
 		ufile.save()
 		

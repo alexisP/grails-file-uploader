@@ -5,13 +5,15 @@ class UFile {
 	Long size
 	String path
 	String name
+	byte[] data
 	String extension
 	Date dateUploaded
 	Integer downloads
 
     static constraints = {
 		size(min:0L)
-		path()
+		path(nullable:true)
+		data(nullable:true)
 		name()
 		extension()
 		dateUploaded()
@@ -20,11 +22,13 @@ class UFile {
 
 	def afterDelete() {
 		try {
-			File f = new File(path)
-			if (f.delete()) {
-				log.debug "file [${path}] deleted"
-			} else {
-				log.error "could not delete file: ${file}"
+			if(path) {
+				File f = new File(path)
+				if (f.delete()) {
+					log.debug "file [${path}] deleted"
+				} else {
+					log.error "could not delete file: ${file}"
+				}
 			}
 		} catch (Exception exp) {
 			log.error "Error deleting file: ${e.message}"
